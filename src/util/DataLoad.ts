@@ -10,7 +10,7 @@ import {
 } from "cesium";
 
 class Load3Dtiles {
-    // private static Loaded_tileset: Cesium3DTileset;
+    private static loaded_tileset: Cesium3DTileset;
     private static clippingPlanes: ClippingPlaneCollection;
     private static polygon: [];
 
@@ -19,13 +19,12 @@ class Load3Dtiles {
         this.polygon = [];
         let clippingPlanes = Load3Dtiles.CreateClipPlane(this.polygon);
         try {
-            let Loaded_tileset = await Cesium3DTileset.fromUrl(url, {
-                // clippingPlanes,
+            this.loaded_tileset = await Cesium3DTileset.fromUrl(url, {
+                clippingPlanes: clippingPlanes,
             });
             // viewer.scene.primitives.add(Loaded_tileset);
-            Loaded_tileset.readyPromise.then(() => {
-                viewer.scene.primitives.add(Loaded_tileset);
-                console.log(Loaded_tileset);
+            this.loaded_tileset.readyPromise.then(() => {
+                viewer.scene.primitives.add(this.loaded_tileset);
 
                 // this.tileset._root.transform = Matrix4.fromTranslation(new Cartesian3(0, 0, -3));
 
@@ -103,13 +102,14 @@ class Load3Dtiles {
 
 
     public static upDated3dTiles = function (polygon: Cartesian3[]) {
-        if (!this.Loaded_tileset) {
+        if (!Load3Dtiles.loaded_tileset) {
             return
         }
-        this.Loaded_tileset.clippingPlanes = Load3Dtiles.CreateClipPlane(polygon)
+        debugger
+        Load3Dtiles.loaded_tileset.clippingPlanes = Load3Dtiles.CreateClipPlane(polygon)
     }
 
-    private static CreateClipPlane = function (polygon): ClippingPlaneCollection {
+    private static CreateClipPlane = function (polygon: Cartesian3[]): ClippingPlaneCollection {
         let transform = Matrix4.fromArray(
             [-0.945486352222663, -0.325661722897675, 0,
                 0, 0.183015057697393, -0.53134349890576,
