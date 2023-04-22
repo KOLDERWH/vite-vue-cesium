@@ -21,40 +21,74 @@
         <template #title>
           <el-icon><img src="../assets/img/page/cloud-drizzle.png" class="setimg" ></el-icon>
         </template>
-        <el-menu-item index="2-1" >降水</el-menu-item>
-        <el-menu-item index="2-2">下雪</el-menu-item>
-        <el-menu-item index="2-3">雾天</el-menu-item>
-        <el-menu-item index="2-4">清除天气效果</el-menu-item>
+        <el-menu-item index="2-1" @click="openrainpanel">降水</el-menu-item>
+        <el-menu-item index="2-2" @click="snoweffect">下雪</el-menu-item>
+        <el-menu-item index="2-3" @click="frogeffect">雾天</el-menu-item>
+        <el-menu-item index="2-4" @click="cleanWeathereffect">清除天气效果</el-menu-item>
       </el-sub-menu>
       <el-sub-menu index="3">
         <template #title>
           <el-icon><img src="../assets/img/page/cube-white.png" class="setimg" ></el-icon>
         </template>
-        <el-menu-item index="3-1">模拟飞行</el-menu-item>
-        <el-menu-item index="3-2">裁切模型</el-menu-item>
-        <el-menu-item index="3-3">item three</el-menu-item>
+        <el-menu-item index="3-1" @click="modelFly">模拟飞行</el-menu-item>
+        <el-menu-item index="3-2" @click="clipModel">裁切模型</el-menu-item>
+        <el-menu-item index="3-3" @click="cleanClip">item three</el-menu-item>
       </el-sub-menu>
       <el-sub-menu index="4">
         <template #title>
           <el-icon><img src="../assets/img/page/ruler.png" class="setimg" ></el-icon>
         </template>
-        <el-menu-item index="4-1">距离测量</el-menu-item>
-        <el-menu-item index="4-2">面积测量</el-menu-item>
-        <el-menu-item index="4-3">三角测量</el-menu-item>
+        <el-menu-item index="4-1" @click="measureDistance">距离测量</el-menu-item>
+        <el-menu-item index="4-2" @click="measureArea">面积测量</el-menu-item>
+        <el-menu-item index="4-3" @click="measureTri">三角测量</el-menu-item>
       </el-sub-menu>
     </el-menu>
-  </template>
+</template>
   
-  <script lang="ts" setup>
+<script lang="ts" setup>
   import { ref } from 'vue';
+  import ClipTools from '../util/ClipTools.ts'
+  import usecesiumStore from '../store/cesiumstore'
   
+  const cesiumStore = usecesiumStore();
+
   const activeIndex = ref('1')
   const handleSelect = (key: string, keyPath: string[]) => {
     console.log(key, keyPath)
   }
-  </script>
-  
-  <style>
+
+  const openrainpanel=()=>{
+    
+  }
+  const snoweffect=()=>{
+
+  }
+  const frogeffect=()=>{
+
+  }
+  const cleanWeathereffect=()=>{
+
+  }
+
+  // 模拟功能
+  const modelFly=()=>{
+
+  }
+  const clipModel=()=>{
+    console.log("clip");
+    console.log(cesiumStore.viewer);
+    
+    ClipTools.clip(cesiumStore.viewer);
+  }
+  const cleanClip=()=>{
+
+  }
+
+
+</script>
+
+
+<style>
   .logo{
     width:60px
   }

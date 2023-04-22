@@ -18,7 +18,6 @@ class Load3Dtiles {
     public static loadTail = async function (url: string, viewer: Viewer,) {
         Load3Dtiles.clippingPlanes = Load3Dtiles.CreateClipPlane(Load3Dtiles.polygon)
         try {
-            // Load3Dtiles.Loaded_tileset =
             Load3Dtiles.Loaded_tileset = await Cesium3DTileset.fromUrl(url, {
                 clippingPlanes: Load3Dtiles.clippingPlanes,
             });

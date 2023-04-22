@@ -19,6 +19,9 @@ import * as Cesium from "cesium";
 import { onMounted } from 'vue';
 import CesiumBar from './CesiumBar.vue';
 import RainPanel from './widget/RainPanel.vue';
+import usecesiumStore from '../store/cesiumstore'
+
+const cesiumstore = usecesiumStore();
 // import RainPanel from '@/widget/RainPanel';
 onMounted(()=>{
   Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMWJmNWUwZS1lMGFiLTRmNzgtYWRiNS00YWRjNmM0MjY1YWIiLCJpZCI6MTE3NDA0LCJpYXQiOjE2NzAzMzkwNjV9.JSpmO9WzmJE2nT5bg0l3iYP9VLntc8syzqhdNGQeOuw'
@@ -32,6 +35,7 @@ onMounted(()=>{
       navigationHelpButton: false,
   };
   const viewer = new Cesium.Viewer('cesiumContainer', option);
+  cesiumstore .viewer=viewer;
 
    // 显示帧速（FPS）
    viewer.scene.debugShowFramesPerSecond = true;
