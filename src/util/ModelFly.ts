@@ -1,6 +1,5 @@
 import {
     Cartesian3,
-    Color,
     JulianDate,
     PathGraphics,
     SampledPositionProperty,
@@ -10,12 +9,9 @@ import {
     Viewer
 } from "cesium";
 
-class flySt {
-    private viewer: Viewer;
-    constructor(viewer: Viewer) {
-        this.viewer = viewer;
-    }
-    modelFly = function () {
+class ModelFly {
+
+    public static startFly = function (viewer: Viewer) {
         const flightData = JSON.parse(
             `[{"longitude":109.007858,"latitude":34.195278,"height":494.27},
             {"longitude":109.008165,"latitude":34.194873,"height":503.37},
@@ -55,14 +51,14 @@ class flySt {
         const totalSeconds = timeStepInSeconds * (flightData.length - 1);
         const start = JulianDate.fromIso8601("2022-02-20T23:10:00Z");
         const stop = JulianDate.addSeconds(start, totalSeconds, new JulianDate());
-        this.viewer.clock.startTime = start.clone();
-        this.viewer.clock.stopTime = stop.clone();
-        this.viewer.clock.currentTime = start.clone();
-        this.viewer.timeline.zoomTo(start, stop);
+        viewer.clock.startTime = start.clone();
+        viewer.clock.stopTime = stop.clone();
+        viewer.clock.currentTime = start.clone();
+        viewer.timeline.zoomTo(start, stop);
         //Speeduptheplaybackspeed50x.
-        this.viewer.clock.multiplier = 3;
+        viewer.clock.multiplier = 3;
         //Startplayingthescene.
-        this.viewer.clock.shouldAnimate = true;
+        viewer.clock.shouldAnimate = true;
 
         const positionProperty = new SampledPositionProperty();
 
@@ -76,15 +72,15 @@ class flySt {
             positionProperty.addSample(time, position);
             // console.log(position);
             arrs.push(position)
-            this.viewer.entities.add({
-                description: `Location:(${dataPoint.longitude},${dataPoint.latitude},${dataPoint.height})`,
-                position: position,
-                polyline: { pixelSize: 10, color: Color.RED }
-            });
+            // viewer.entities.add({
+            //     description: `Location:(${dataPoint.longitude},${dataPoint.latitude},${dataPoint.height})`,
+            //     position: position,
+            //     point: { pixelSize: 10, color: Color.RED }
+            // });
         }
 
         const airplaneUri = 'models/Cesium_Air.glb';
-        const airplaneEntity = this.viewer.entities.add({
+        const airplaneEntity = viewer.entities.add({
             availability: new TimeIntervalCollection([new TimeInterval({ start: start, stop: stop })]),
             position: positionProperty,
             model: {
@@ -96,7 +92,8 @@ class flySt {
             path: new PathGraphics({ width: 2 })
         });
 
-        this.viewer.trackedEntity = airplaneEntity;
+        viewer.trackedEntity = airplaneEntity;
     }
 
 }
+export default ModelFly

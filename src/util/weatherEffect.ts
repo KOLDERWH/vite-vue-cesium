@@ -1,18 +1,32 @@
+import {
+    CallbackProperty,
+    Cartesian3,
+    Color,
+    PolygonHierarchy,
+    PostProcessStage,
+    Viewer,
+    defaultValue
+} from "cesium";
 
 class FogEffect {
-    constructor(viewer, options) {
+    options;
+    visibility;
+    color;
+    _show;
+    viewer;
+    fogStage: PostProcessStage;
+    constructor(viewer: Viewer, options) {
         if (!viewer) throw new Error('no viewer object!');
         options = options || {};
-        this.visibility = Cesium.defaultValue(options.visibility, 0.1);
-        this.color = Cesium.defaultValue(options.color,
-            new Cesium.Color(0.8, 0.8, 0.8, 0.5));
-        this._show = Cesium.defaultValue(options.show, !0);
+        this.visibility = defaultValue(options.visibility, 0.1);
+        this.color = defaultValue(options.color, new Color(0.8, 0.8, 0.8, 0.5));
+        this._show = defaultValue(options.show, !0);
         this.viewer = viewer;
         this.init();
     }
 
     init() {
-        this.fogStage = new Cesium.PostProcessStage({
+        this.fogStage = new PostProcessStage({
             name: 'czm_fog',
             fragmentShader: this.fog(),
             uniforms: {
@@ -37,7 +51,7 @@ class FogEffect {
 
     show(visible) {
         this._show = visible;
-        this.fogState.enabled = this._show;
+        this.fogStage.enabled = this._show;
     }
 
     fog() {
@@ -61,19 +75,24 @@ class FogEffect {
 }
 
 class RainEffect {
-    constructor(viewer, options) {
+    tiltAngle;
+    rainSize;
+    rainSpeed;
+    viewer: Viewer;
+    rainStage: PostProcessStage;
+    constructor(viewer: Viewer, options) {
         if (!viewer) throw new Error('no viewer object!');
         options = options || {};
         //倾斜角度，负数向右，正数向左
-        this.tiltAngle = Cesium.defaultValue(options.tiltAngle, -.6);
-        this.rainSize = Cesium.defaultValue(options.rainSize, 0.3);
-        this.rainSpeed = Cesium.defaultValue(options.rainSpeed, 60.0);
+        this.tiltAngle = defaultValue(options.tiltAngle, -.6);
+        this.rainSize = defaultValue(options.rainSize, 0.3);
+        this.rainSpeed = defaultValue(options.rainSpeed, 60.0);
         this.viewer = viewer;
         this.init();
     }
 
     init() {
-        this.rainStage = new Cesium.PostProcessStage({
+        this.rainStage = new PostProcessStage({
             name: 'czm_rain',
             fragmentShader: this.rain(),
             uniforms: {
@@ -133,17 +152,21 @@ class RainEffect {
 }
 
 class SnowEffect {
-    constructor(viewer, options) {
+    snowSize;
+    snowSpeed;
+    viewer;
+    snowStage: PostProcessStage;
+    constructor(viewer: Viewer, options) {
         if (!viewer) throw new Error('no viewer object!');
         options = options || {};
-        this.snowSize = Cesium.defaultValue(options.snowSize, 0.02); //最好小于0.02
-        this.snowSpeed = Cesium.defaultValue(options.snowSpeed, 60.0);
+        this.snowSize = defaultValue(options.snowSize, 0.02); //最好小于0.02
+        this.snowSpeed = defaultValue(options.snowSpeed, 60.0);
         this.viewer = viewer;
         this.init();
     }
 
     init() {
-        this.snowStage = new Cesium.PostProcessStage({
+        this.snowStage = new PostProcessStage({
             name: 'czm_snow',
             fragmentShader: this.snow(),
             uniforms: {
@@ -206,75 +229,26 @@ class SnowEffect {
     }
 }
 
-
-function Snow() {
-    function FS_Snow() {
-        return "uniform sampler2D colorTexture;\n\
-            in vec2 v_textureCoordinates;\n\
-            out vec4 FragColor;\n\
-            float snow(vec2 uv,float scale)\n\
-            {\n\
-                float time = czm_frameNumber / 60.0;\n\
-                float w=smoothstep(1.,0.,-uv.y*(scale/10.));if(w<.1)return 0.;\n\
-                uv+=time/scale;uv.y+=time*2./scale;uv.x+=sin(uv.y+time*.5)/scale;\n\
-                uv*=scale;vec2 s=floor(uv),f=fract(uv),p;float k=3.,d;\n\
-                p=.5+.35*sin(11.*fract(sin((s+p+scale)*mat2(7,3,6,5))*5.))-f;d=length(p);k=min(d,k);\n\
-                k=smoothstep(0.,k,sin(f.x+f.y)*0.01);\n\
-                return k*w;\n\
-            }\n\
-            void main(void){\n\
-                vec2 resolution = czm_viewport.zw;\n\
-                vec2 uv=(gl_FragCoord.xy*2.-resolution.xy)/min(resolution.x,resolution.y);\n\
-                vec3 finalColor=vec3(0);\n\
-                float c = 0.0;\n\
-                c+=snow(uv,30.)*.0;\n\
-                c+=snow(uv,20.)*.0;\n\
-                c+=snow(uv,15.)*.0;\n\
-                c+=snow(uv,10.);\n\
-                c+=snow(uv,8.);\n\
-                c+=snow(uv,6.);\n\
-                c+=snow(uv,5.);\n\
-                finalColor=(vec3(c)); \n\
-                FragColor = mix(texture(colorTexture, v_textureCoordinates), vec4(finalColor,1), 0.3); \n\
-        \n\
-            }\n\
-        ";
-    }
-
-    var collection = viewer.scene.postProcessStages;
-    var fs_snow = FS_Snow();
-    var snow = new Cesium.PostProcessStage({
-        name: 'czm_snow',
-        fragmentShader: fs_snow
-    });
-    collection.add(snow);
-    //viewer.scene.skyAtmosphere.hueShift = -0.8;
-    //viewer.scene.skyAtmosphere.saturationShift = -0.7;
-    viewer.scene.skyAtmosphere.brightnessShift = -0.33;//大气圈亮度
-    //viewer.scene.fog.density = 0.001;
-    viewer.scene.fog.minimumBrightness = 0.8;//0.8
-}
-
 /**
 *
 *@param{*}targetHeight目标高度
 *@param{*}adapCoordi范围坐标
 *@param{*}waterHeight当前水高度
 */
-function drawWater(targetHeight, areaCoor, waterHeight) {
+function drawWater(targetHeight, areaCoor, waterHeight, viewer) {
     let entity = viewer.entities.add({
         polygon: {
             height: waterHeight,
-            hierarchy: new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArrayHeights(areaCoor)),
+            hierarchy: new PolygonHierarchy(Cartesian3.fromDegreesArrayHeights(areaCoor)),
             //perPositionHeight:true,
-            extrudedHeight: new Cesium.CallbackProperty(function () {//此处用属性回调函数，直接设置extrudedHeight会导致闪烁。
+            extrudedHeight: new CallbackProperty(function () {//此处用属性回调函数，直接设置extrudedHeight会导致闪烁。
                 waterHeight += 0.005;
                 if (waterHeight > targetHeight) {
                     waterHeight = targetHeight;//给个最大值
                 }
                 return waterHeight
             }, false),
-            material: new Cesium.Color.fromBytes(97, 184, 255, 100),
+            material: Color.fromBytes(97, 184, 255, 100),
         }
     });
 

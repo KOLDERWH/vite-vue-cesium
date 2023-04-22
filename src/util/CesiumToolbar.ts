@@ -27,8 +27,8 @@ class CesiumToolbar {
     static hide() {
         // document.getElementsByClassName('.cesium-viewer-toolbar').hide();
     }
-    static add(ele) {
-        // document.getElementsByClassName('.cesium-viewer-toolbar').append(ele);
+    static add(ele: HTMLButtonElement) {
+        document.querySelector('.cesium-viewer-toolbar')?.append(ele);
     }
     static remove(ele) {
         ele.remove();
@@ -46,7 +46,7 @@ class CesiumToolbar {
         if (document.querySelectorAll('.northViewBtn').length > 0) {
             return;
         }
-        let button = CesiumToolbar.getImgButton('img/toolbar/northArr.png', '正北方向');
+        let button = CesiumToolbar.getImgButton('../assets/img/toolbar/northArr.png', '正北方向');
 
         button.onclick = () => {
             CesiumToolbar.viewer.camera.setView({
@@ -65,7 +65,7 @@ class CesiumToolbar {
         if (document.querySelectorAll('.removeAllDSBtn').length > 0) {
             return;
         }
-        let button = CesiumToolbar.getImgButton('img/toolbar/remove.png', '移除所有图层');
+        let button = CesiumToolbar.getImgButton('src/assets/img/toolbar/remove.png', '移除所有图层');
         button.onclick = () => {
             CesiumToolbar.viewer.dataSources.removeAll(true);
             CesiumToolbar.viewer.entities.removeAll();
@@ -79,7 +79,7 @@ class CesiumToolbar {
         if (document.querySelectorAll('.zoomIn').length > 0) {
             return;
         }
-        let button = CesiumToolbar.getImgButton('img/toolbar/zoomIn.png', '放大');
+        let button = CesiumToolbar.getImgButton('../src/assets/img/toolbar/zoomIn.png', '放大');
         button.onclick = () => {
             // viewer 为 Viewer 对象
             let position = CesiumToolbar.viewer.camera.position;
@@ -88,7 +88,7 @@ class CesiumToolbar {
             let moveRate = cameraHeight / 20.0;
             CesiumToolbar.viewer.camera.moveForward(moveRate);
         }
-        button.classList.add('zoomIn ');
+        button.classList.add('zoomIn');
         button.classList.add('zoom');
         //button.css('transform','rotate(-45deg)');
         CesiumToolbar.add(button);
@@ -97,7 +97,7 @@ class CesiumToolbar {
         if (document.querySelectorAll('.zoomOut').length > 0) {
             return;
         }
-        let button = CesiumToolbar.getImgButton('img/toolbar/zoomOut.png', '缩小');
+        let button = CesiumToolbar.getImgButton('@/assets/img/toolbar/zoomOut.png', '缩小');
         button.onclick = () => {
             let position = CesiumToolbar.viewer.camera.position;
             let cameraHeight = CesiumToolbar.viewer.scene.globe.ellipsoid.cartesianToCartographic(position).height;

@@ -13,6 +13,7 @@ import {
     LabelStyle,
     Math,
     NearFarScalar,
+    Ray,
     ScreenSpaceEventType,
     VerticalOrigin,
     Viewer
@@ -20,14 +21,8 @@ import {
 
 
 class MeasureTools {
-    private viewer: Viewer;
-    private entityCollection: Entity[] = [];
-    constructor(viewer: Viewer) {
-        this.viewer = viewer;
-        this.entityCollection = [];
-
-    }
-
+    private static entityManageCollection: Entity[] = [];
+    constructor() { }
     getCollection = function () {
         return this.entityCollection;
     };
@@ -35,41 +30,45 @@ class MeasureTools {
     /**
      * 清除
      */
-    destroy = function () {
-        for (let i = 0; i < this.entityCollection.length; i++) {
-            this.viewer.entities.remove(this.entityCollection[i]);
+    public static destroy = function (viewer: Viewer) {
+
+        for (let i = 0; i < this.entityManageCollection.length; i++) {
+            // viewer.entities.remove(this.entityManageCollection[i]);
+            viewer.entities.removeById(this.entityManageCollection[i].id)
+
+
         }
-        this.entityCollection = [];
+        this.entityManageCollection = [];
     };
 
     /**
      * 测距
      */
-    measurePolyLine = function () {
-
+    public static measurePolyLine = function (viewer: Viewer) {
+        this.entityCollection = [];
         let positions: Cartesian3[] = [];
-        let labelEntity = null; // 标签实体
+        let labelEntity: Entity; // 标签实体
 
         // 注册鼠标左击事件
-        this.viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
-            let cartesian = this.viewer.scene.pickPosition(clickEvent.position); // 坐标
+        viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+            let cartesian = viewer.scene.pickPosition(clickEvent.position); // 坐标
 
             // 存储第一个点
             if (positions.length == 0) {
                 positions.push(cartesian.clone());
 
-                this.addPoint(cartesian);
+                this.addPoint(cartesian, viewer);
 
                 // 注册鼠标移动事件
-                this.viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
-                    let movePosition = this.viewer.scene.pickPosition(moveEvent.endPosition); // 鼠标移动的点
+                viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
+                    let movePosition = viewer.scene.pickPosition(moveEvent.endPosition); // 鼠标移动的点
                     if (positions.length == 2) {
                         positions.pop();
                         positions.push(movePosition);
 
                         // 绘制label
                         if (labelEntity) {
-                            this.viewer.entities.remove(labelEntity);
+                            viewer.entities.remove(labelEntity);
                             this.entityCollection.splice(this.entityCollection.indexOf(labelEntity), 1);
                         }
 
@@ -78,23 +77,24 @@ class MeasureTools {
                         // 计算距离
                         let lengthText = "距离：" + this.getLengthText(positions[0], positions[1]);
 
-                        labelEntity = this.addLabel(centerPoint, lengthText);
+                        labelEntity = MeasureTools.addLabel(centerPoint, lengthText, viewer);
                         this.entityCollection.push(labelEntity);
 
                     } else {
                         positions.push(movePosition);
 
                         // 绘制线
-                        this.addLine(positions);
+                        let entiLine = MeasureTools.addLine(positions, viewer);
+                        // this.entityCollection.push(entiLine)
                     }
                 }, ScreenSpaceEventType.MOUSE_MOVE);
             } else {
                 // 存储第二个点
                 positions.pop();
                 positions.push(cartesian);
-                this.addPoint(cartesian);
-                this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
-                this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
+                this.addPoint(cartesian, viewer);
+                viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
+                viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
             }
         }, ScreenSpaceEventType.LEFT_CLICK);
     };
@@ -102,50 +102,54 @@ class MeasureTools {
     /**
      * 测面积
      */
-    measurePolygon = function () {
+    public static measurePolygon = function (viewer: Viewer) {
+        this.entityCollection = [];
 
         let positions: Cartesian3[] = [];
         let clickStatus = false;
-        let labelEntity = null;
+        let labelEntity: Entity;
 
-        this.viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+        viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
 
             clickStatus = true;
             // 贴合3dtiles模型
-            let cartesian = this.viewer.scene.pickPosition(clickEvent.position);
+            let cartesian = viewer.scene.pickPosition(clickEvent.position);
 
             // 不贴合3dtiles
-            // let cartesian = this.viewer.scene.globe.pick(this.viewer.camera.getPickRay(clickEvent.position), this.viewer.scene);
+            // let cartesian = viewer.scene.globe.pick(viewer.camera.getPickRay(clickEvent.position), viewer.scene);
 
             if (positions.length == 0) {
                 positions.push(cartesian.clone()); //鼠标左击 添加第1个点
-                this.addPoint(cartesian);
+                this.addPoint(cartesian, viewer);
 
-                this.viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
-                    // let movePosition = this.viewer.scene.pickPosition(moveEvent.endPosition);
-                    let movePosition = this.viewer.scene.globe.pick(this.viewer.camera.getPickRay(moveEvent.endPosition), this.viewer.scene);
+                viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
+                    // let movePosition = viewer.scene.pickPosition(moveEvent.endPosition);
+                    let movePosition = viewer.scene.globe.pick(
+                        viewer.camera.getPickRay(moveEvent.endPosition) || new Ray(),
+                        viewer.scene);
 
                     if (positions.length == 1) {
-                        positions.push(movePosition);
-                        this.addLine(positions);
+                        positions.push(movePosition || new Cartesian3());
+                        let entiLine = MeasureTools.addLine(positions, viewer);
+                        // this.entityCollection.push(entiLine)
                     } else {
                         if (clickStatus) {
-                            positions.push(movePosition);
+                            positions.push(movePosition || new Cartesian3());
                         } else {
                             positions.pop();
-                            positions.push(movePosition);
+                            positions.push(movePosition || new Cartesian3());
                         }
                     }
                     if (positions.length >= 3) {
                         // 绘制label
                         if (labelEntity) {
-                            this.viewer.entities.remove(labelEntity);
+                            viewer.entities.remove(labelEntity);
                             this.entityCollection.splice(this.entityCollection.indexOf(labelEntity), 1);
                         }
 
                         let text = "面积：" + this.getArea(positions);
                         let centerPoint = this.getCenterOfGravityPoint(positions);
-                        labelEntity = this.addLabel(centerPoint, text);
+                        labelEntity = MeasureTools.addLabel(centerPoint, text, viewer);
 
                         this.entityCollection.push(labelEntity);
                     }
@@ -159,32 +163,32 @@ class MeasureTools {
                 positions.pop();
                 positions.push(cartesian.clone()); // 鼠标左击 添加第2个点
 
-                this.addPoint(cartesian);
+                this.addPoint(cartesian, viewer);
 
                 // addPolyGon(positions);
 
                 // 右击结束
-                this.viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+                viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
 
-                    let clickPosition = this.viewer.scene.pickPosition(clickEvent.position);
-                    // let clickPosition = this.viewer.scene.globe.pick(this.viewer.camera.getPickRay(clickEvent.position), this.viewer.scene);
+                    let clickPosition = viewer.scene.pickPosition(clickEvent.position);
+                    // let clickPosition = viewer.scene.globe.pick(viewer.camera.getPickRay(clickEvent.position), viewer.scene);
 
                     positions.pop();
                     positions.push(clickPosition);
                     positions.push(positions[0]); // 闭合
-                    this.addPoint(clickPosition);
-                    this.addPolyGon(positions);
+                    this.addPoint(clickPosition, viewer);
+                    this.addPolyGon(positions, viewer);
 
-                    this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
-                    this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
-                    this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.RIGHT_CLICK);
+                    viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
+                    viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
+                    viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.RIGHT_CLICK);
 
                 }, ScreenSpaceEventType.RIGHT_CLICK);
 
             } else if (positions.length >= 3) {
                 positions.pop();
                 positions.push(cartesian.clone()); // 鼠标左击 添加第3个点
-                this.addPoint(cartesian);
+                this.addPoint(cartesian, viewer);
             }
 
         }, ScreenSpaceEventType.LEFT_CLICK);
@@ -193,24 +197,26 @@ class MeasureTools {
     /**
      * 测高
      */
-    measureHeight = function () {
+    public static measureHeight = function (viewer: Viewer) {
+        this.entityCollection = [];
+
         let positions: Cartesian3[] = [];
-        let labelEntity_1 = null; // 标签实体
-        let labelEntity_2 = null; // 标签实体
-        let labelEntity_3 = null; // 标签实体
+        let labelEntity_1: Entity; // 标签实体
+        let labelEntity_2: Entity; // 标签实体
+        let labelEntity_3: Entity; // 标签实体
 
         // 注册鼠标左击事件
-        this.viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
-            let cartesian = this.viewer.scene.pickPosition(clickEvent.position); // 坐标
+        viewer.screenSpaceEventHandler.setInputAction((clickEvent) => {
+            let cartesian = viewer.scene.pickPosition(clickEvent.position); // 坐标
 
             // 存储第一个点
             if (positions.length == 0) {
                 positions.push(cartesian.clone());
-                this.this.addPoint(cartesian);
+                this.addPoint(cartesian, viewer);
 
                 // 注册鼠标移动事件
-                this.viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
-                    let movePosition = this.viewer.scene.pickPosition(moveEvent.endPosition); // 鼠标移动的点
+                viewer.screenSpaceEventHandler.setInputAction((moveEvent) => {
+                    let movePosition = viewer.scene.pickPosition(moveEvent.endPosition); // 鼠标移动的点
                     if (positions.length >= 2) {
                         positions.pop();
                         positions.pop();
@@ -226,11 +232,11 @@ class MeasureTools {
 
                         // 绘制label
                         if (labelEntity_1) {
-                            this.viewer.entities.remove(labelEntity_1);
+                            viewer.entities.remove(labelEntity_1);
                             this.entityCollection.splice(this.entityCollection.indexOf(labelEntity_1), 1);
-                            this.viewer.entities.remove(labelEntity_2);
+                            viewer.entities.remove(labelEntity_2 || new Entity());
                             this.entityCollection.splice(this.entityCollection.indexOf(labelEntity_2), 1);
-                            this.viewer.entities.remove(labelEntity_3);
+                            viewer.entities.remove(labelEntity_3 || new Entity());
                             this.entityCollection.splice(this.entityCollection.indexOf(labelEntity_3), 1);
                         }
 
@@ -239,7 +245,7 @@ class MeasureTools {
                         // 计算距离
                         let lengthText_1 = "水平距离：" + this.getLengthText(positions[0], positions[1]);
 
-                        labelEntity_1 = this.addLabel(centerPoint_1, lengthText_1);
+                        labelEntity_1 = MeasureTools.addLabel(centerPoint_1, lengthText_1, viewer);
                         this.entityCollection.push(labelEntity_1);
 
                         // 计算中点
@@ -247,7 +253,7 @@ class MeasureTools {
                         // 计算距离
                         let lengthText_2 = "垂直距离：" + this.getLengthText(positions[1], positions[2]);
 
-                        labelEntity_2 = this.addLabel(centerPoint_2, lengthText_2);
+                        labelEntity_2 = MeasureTools.addLabel(centerPoint_2, lengthText_2, viewer);
                         this.entityCollection.push(labelEntity_2);
 
                         // 计算中点
@@ -255,7 +261,7 @@ class MeasureTools {
                         // 计算距离
                         let lengthText_3 = "直线距离：" + this.getLengthText(positions[2], positions[3]);
 
-                        labelEntity_3 = this.addLabel(centerPoint_3, lengthText_3);
+                        labelEntity_3 = MeasureTools.addLabel(centerPoint_3, lengthText_3, viewer);
                         this.entityCollection.push(labelEntity_3);
 
                     } else {
@@ -264,7 +270,8 @@ class MeasureTools {
                         positions.push(movePosition);
                         positions.push(positions[0]);
                         // 绘制线
-                        this.addLine(positions);
+                        let entiLine = MeasureTools.addLine(positions, viewer);
+                        // this.entityCollection.push(entiLine)
                     }
                 }, ScreenSpaceEventType.MOUSE_MOVE);
             } else {
@@ -279,9 +286,9 @@ class MeasureTools {
                 positions.push(verticalPoint);
                 positions.push(cartesian);
                 positions.push(positions[0]);
-                this.addPoint(cartesian);
-                this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
-                this.viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
+                this.addPoint(cartesian, viewer);
+                viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
+                viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
             }
         }, ScreenSpaceEventType.LEFT_CLICK);
     };
@@ -290,11 +297,9 @@ class MeasureTools {
      * 添加点
      * @param position
      */
-    addPoint = function (position) {
-        // console.log(position);
+    static addPoint = function (position: Cartesian3, viewer: Viewer): Entity {
         // position = [position.x, position.y, (Number)((position.z) + 100000)];
-        console.log(position);
-        this.entityCollection.push(this.viewer.entities.add(new Entity({
+        let tempPoint = new Entity({
             position: position,
             point: {
                 color: Color.GREEN,
@@ -302,41 +307,59 @@ class MeasureTools {
                 scaleByDistance: new NearFarScalar(500, 1.0, 2000, 0.0),
                 translucencyByDistance: new NearFarScalar(500, 1.0, 2000, 0.0)
             }
-        })));
+        });
+        viewer.entities.add(tempPoint)
+        // console.log(tempPoint);
+
+        // this.entityCollection.push(tempPoint);
+        MeasureTools.entityManageCollection.push(tempPoint)
+        return tempPoint
     };
 
     /**
      * 添加线
      * @param positions
      */
-    addLine = function (positions) {
+    static addLine = function (positions: Cartesian3[], viewer: Viewer): Entity {
         let dynamicPositions = new CallbackProperty(function () {
             return positions;
         }, false);
-        this.entityCollection.push(this.viewer.entities.add(new Entity({
+        let tempLineEn = new Entity({
             polyline: {
                 positions: dynamicPositions,
                 width: 4,
                 material: Color.RED
             }
-        })));
+        });
+        viewer.entities.add(tempLineEn);
+        // console.log(tempLineEn);
+
+
+        MeasureTools.entityManageCollection.push(tempLineEn)
+
+        // this.entityCollection.push();
+        return tempLineEn
     };
 
     /**
      * 添加面
      * @param positions
      */
-    addPolyGon = function (positions) {
+    static addPolyGon = function (positions: Cartesian3[], viewer: Viewer): Entity {
         // let dynamicPositions = new CallbackProperty(function () {
         //     return positions;
         // }, false);
-        this.entityCollection.push(this.viewer.entities.add(new Entity({
+        let tempPolygonEnti = new Entity({
             polygon: {
                 hierarchy: positions,
                 material: Color.RED.withAlpha(0.6),
                 classificationType: ClassificationType.BOTH // 贴地表和贴模型,如果设置了，这不能使用挤出高度
             }
-        })));
+        });
+        viewer.entities.add(tempPolygonEnti)
+        MeasureTools.entityManageCollection.push(tempPolygonEnti)
+        // this.entityCollection.push();
+        return tempPolygonEnti
     };
 
     /**
@@ -344,8 +367,8 @@ class MeasureTools {
      * @param position
      * @param text
      */
-    addLabel = function (centerPoint, text) {
-        return this.viewer.entities.add(new Entity({
+    static addLabel = function (centerPoint, text: string, viewer: Viewer): Entity {
+        let tempLabelEnti = new Entity({
             position: centerPoint,
             label: {
                 text: text,
@@ -358,7 +381,11 @@ class MeasureTools {
                 backgroundPadding: new Cartesian2(6, 6),//指定以像素为单位的水平和垂直背景填充padding
                 pixelOffset: new Cartesian2(0, -25)
             }
-        }));
+        })
+
+        viewer.entities.add(tempLabelEnti);
+        MeasureTools.entityManageCollection.push(tempLabelEnti)
+        return tempLabelEnti
     };
 
     /**
@@ -366,7 +393,7 @@ class MeasureTools {
      * @param firstPoint
      * @param secondPoint
      */
-    getLengthText = function (firstPoint, secondPoint) {
+    static getLengthText = function (firstPoint: Cartesian3, secondPoint: Cartesian3) {
         // 计算距离
         let length = Cartesian3.distance(firstPoint, secondPoint);
         let len_result: string;
@@ -379,7 +406,7 @@ class MeasureTools {
     };
 
     //计算多边形面积
-    getArea = function (points) {
+    static getArea = function (points: Cartesian3[]) {
         2
 
         let radiansPerDegree = Math.PI / 180.0;//角度转化为弧度(rad)
@@ -432,9 +459,7 @@ class MeasureTools {
         for (let i = 0; i < points.length - 2; i++) {
             let j = (i + 1) % points.length;
             let k = (i + 2) % points.length;
-            debugger
             let totalAngle = Angle(points[i], points[j], points[k]);
-
 
             let dis_temp1 = distance(points[j], points[0]);
             let dis_temp2 = distance(points[k], points[0]);
@@ -458,7 +483,7 @@ class MeasureTools {
      * @param mPoints
      * @returns {*[]}
      */
-    getCenterOfGravityPoint = function (mPoints) {
+    static getCenterOfGravityPoint = function (mPoints: Cartesian3[]) {
         let centerPoint = mPoints[0];
         for (let i = 1; i < mPoints.length; i++) {
             centerPoint = Cartesian3.midpoint(centerPoint, mPoints[i], new Cartesian3());

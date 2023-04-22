@@ -5,6 +5,7 @@ const usecesiumStore = defineStore('cesiumstore', {
     state: () => {
         return {
             viewer: Object.create(null),
+            tilesEnti: Object.create(null),
         }
     },
 })
