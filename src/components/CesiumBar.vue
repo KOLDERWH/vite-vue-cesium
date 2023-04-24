@@ -11,7 +11,8 @@
     </el-menu-item>
     <div class="flex-grow" />
 
-    <el-menu-item index="1">
+    <el-menu-item index="1"
+                  @click="openSetpanel">
       <el-icon><img src="/img/page/set.png"
              class="setimg" /></el-icon>
       <span>&nbsp</span>
@@ -70,6 +71,10 @@ import { WeatherEffect } from "../util/WeatherEffect";
 
 const cesiumStore = usecesiumStore();
 const panelStore = panelStatusStore();
+
+const openSetpanel = () => {
+  panelStore.isOpenSetPanel = !panelStore.isOpenSetPanel;
+}
 
 const openrainpanel = () => {
   panelStore.isOpenRainPanel = !panelStore.isOpenRainPanel;
