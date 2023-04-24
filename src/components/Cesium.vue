@@ -9,6 +9,7 @@
       </el-main>
     </el-container>
     <RainPanel class="rainPanel"></RainPanel>
+    <SetPanel class="setPanel"></SetPanel>
   </div>
 </template>
   
@@ -20,6 +21,7 @@ import usecesiumStore from "../store/cesiumstore";
 import CesiumToolbar from "../util/CesiumToolbar";
 import CesiumBar from "./CesiumBar.vue";
 import RainPanel from "./widget/RainPanel.vue";
+import SetPanel from "./widget/SetPanel.vue";
 
 const cesiumstore = usecesiumStore();
 // import RainPanel from '@/widget/RainPanel';
@@ -46,22 +48,6 @@ onMounted(() => {
 
   cesiumstore.viewer = viewer;
 
-  // var scene = viewer.scene;
-  // var handlerCli = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-  // handlerCli.setInputAction(function (movement) {
-  //   var pick = viewer.scene.pick(movement.position);
-  //   if (Cesium.defined(pick)) {
-  //     console.log(pick.id.properties);
-  //     for (let item of pick.id.properties.propertyNames) {
-  //       console.log(item);
-  //       console.log(pick.id.properties[item]._value);
-
-  //     }
-  //     // console.log(pick.id.properties.位置.value);
-  //     // console.log(pick.id.properties.人数.value);
-  //   }
-  // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
 
   mousePst()
   function mousePst() {
@@ -82,7 +68,36 @@ onMounted(() => {
   }
 
 });
+
+window.onload = function () {
+  var menu = document.querySelector('.rainPanel') as HTMLElement;
+  var isDragging = false;
+  var dragX, dragY;
+
+  menu.addEventListener('mousedown', function (e) {
+    isDragging = true;
+    dragX = e.clientX - menu.offsetLeft;
+    dragY = e.clientY - menu.offsetTop;
+  });
+
+  menu.addEventListener('mousemove', function (e) {
+    if (isDragging) {
+      menu.style.left = (e.clientX - dragX) + 'px';
+      menu.style.top = (e.clientY - dragY) + 'px';
+    }
+  });
+
+  menu.addEventListener('mouseup', function (e) {
+    isDragging = false;
+  });
+}
+
+
+
+
+
 </script>  
+
 
 <style scoped>
 .el-container {
@@ -104,7 +119,18 @@ onMounted(() => {
   position: absolute;
   background-color: #fff;
   top: 30%;
-  left: 1%;
+  left: 3%;
   width: 300px;
+  border-radius: 10px;
+}
+
+.setPanel {
+
+  position: absolute;
+  background-color: #fff;
+  top: 30%;
+  left: 3%;
+  width: 300px;
+  border-radius: 10px;
 }
 </style>
